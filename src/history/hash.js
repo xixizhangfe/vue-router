@@ -28,6 +28,7 @@ export class HashHistory extends History {
       setupScroll()
     }
 
+    // 这里事件监听的回调函数似乎不会执行
     window.addEventListener(supportsPushState ? 'popstate' : 'hashchange', () => {
       const current = this.current
       if (!ensureSlash()) {

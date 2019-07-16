@@ -634,14 +634,14 @@ function cleanPath (path) {
   return path.replace(/\/\//g, '/')
 }
 
-var isarray = Array.isArray || function (arr) {
+var _isarray_0_0_1_isarray = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
 /**
  * Expose `pathToRegexp`.
  */
-var pathToRegexp_1 = pathToRegexp;
+var _pathToRegexp_1_7_0_pathToRegexp = pathToRegexp;
 var parse_1 = parse;
 var compile_1 = compile;
 var tokensToFunction_1 = tokensToFunction;
@@ -818,7 +818,7 @@ function tokensToFunction (tokens) {
         }
       }
 
-      if (isarray(value)) {
+      if (_isarray_0_0_1_isarray(value)) {
         if (!token.repeat) {
           throw new TypeError('Expected "' + token.name + '" to not repeat, but received `' + JSON.stringify(value) + '`')
         }
@@ -969,7 +969,7 @@ function stringToRegexp (path, keys, options) {
  * @return {!RegExp}
  */
 function tokensToRegExp (tokens, keys, options) {
-  if (!isarray(keys)) {
+  if (!_isarray_0_0_1_isarray(keys)) {
     options = /** @type {!Object} */ (keys || options);
     keys = [];
   }
@@ -1045,7 +1045,7 @@ function tokensToRegExp (tokens, keys, options) {
  * @return {!RegExp}
  */
 function pathToRegexp (path, keys, options) {
-  if (!isarray(keys)) {
+  if (!_isarray_0_0_1_isarray(keys)) {
     options = /** @type {!Object} */ (keys || options);
     keys = [];
   }
@@ -1056,16 +1056,16 @@ function pathToRegexp (path, keys, options) {
     return regexpToRegexp(path, /** @type {!Array} */ (keys))
   }
 
-  if (isarray(path)) {
+  if (_isarray_0_0_1_isarray(path)) {
     return arrayToRegexp(/** @type {!Array} */ (path), /** @type {!Array} */ (keys), options)
   }
 
   return stringToRegexp(/** @type {string} */ (path), /** @type {!Array} */ (keys), options)
 }
-pathToRegexp_1.parse = parse_1;
-pathToRegexp_1.compile = compile_1;
-pathToRegexp_1.tokensToFunction = tokensToFunction_1;
-pathToRegexp_1.tokensToRegExp = tokensToRegExp_1;
+_pathToRegexp_1_7_0_pathToRegexp.parse = parse_1;
+_pathToRegexp_1_7_0_pathToRegexp.compile = compile_1;
+_pathToRegexp_1_7_0_pathToRegexp.tokensToFunction = tokensToFunction_1;
+_pathToRegexp_1_7_0_pathToRegexp.tokensToRegExp = tokensToRegExp_1;
 
 /*  */
 
@@ -1081,7 +1081,7 @@ function fillParams (
   try {
     const filler =
       regexpCompileCache[path] ||
-      (regexpCompileCache[path] = pathToRegexp_1.compile(path));
+      (regexpCompileCache[path] = _pathToRegexp_1_7_0_pathToRegexp.compile(path));
 
     // Fix #2505 resolving asterisk routes { name: 'not-found', params: { pathMatch: '/not-found' }}
     if (params.pathMatch) params[0] = params.pathMatch;
@@ -1244,7 +1244,7 @@ function addRouteRecord (
 }
 
 function compileRouteRegex (path, pathToRegexpOptions) {
-  const regex = pathToRegexp_1(path, [], pathToRegexpOptions);
+  const regex = _pathToRegexp_1_7_0_pathToRegexp(path, [], pathToRegexpOptions);
   {
     const keys = Object.create(null);
     regex.keys.forEach(key => {
@@ -2423,6 +2423,18 @@ class VueRouter {
   
   
 
+  // 这个options就是我们实例化router时传的，如：
+  /*
+    const router = new Router({
+      mode: 'history',
+      base: '/v3/user-center/',
+      routes: [{
+        path: '/',
+        name: 'index',
+        component: GuidePage,
+      }]
+    });
+  */
   constructor (options = {}) {
     this.app = null;
     this.apps = [];

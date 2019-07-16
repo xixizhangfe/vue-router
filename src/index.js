@@ -7,6 +7,7 @@ import { inBrowser } from './util/dom'
 import { cleanPath } from './util/path'
 import { createMatcher } from './create-matcher'
 import { normalizeLocation } from './util/location'
+// supportsPushState是判断用户代理是否支持pushState方法
 import { supportsPushState } from './util/push-state'
 
 import { HashHistory } from './history/hash'
@@ -45,8 +46,11 @@ export default class VueRouter {
     });
   */
   constructor (options: RouterOptions = {}) {
+    // this.app是Vue根实例
     this.app = null
+    // this.apps保存持有 $options.router 属性的 Vue 实例
     this.apps = []
+    // 传入的路由配置
     this.options = options
     this.beforeHooks = []
     this.resolveHooks = []
@@ -54,6 +58,8 @@ export default class VueRouter {
     this.matcher = createMatcher(options.routes || [], this)
 
     let mode = options.mode || 'hash'
+    // 当浏览器不支持 history.pushState时，控制路由是否应该回退到 hash 模式。默认值为 true。
+    // 在 IE9 中，设置为 false 会使得每个 router-link 导航都触发整页刷新。它可用于工作在 IE9 下的服务端渲染应用，因为一个 hash 模式的 URL 并不支持服务端渲染。
     this.fallback = mode === 'history' && !supportsPushState && options.fallback !== false
     if (this.fallback) {
       mode = 'hash'
@@ -63,6 +69,7 @@ export default class VueRouter {
     }
     this.mode = mode
 
+    // base: 应用的基路径。例如，如果整个单页应用服务在 /app/ 下，然后 base 就应该设为 "/app/"
     switch (mode) {
       case 'history':
         this.history = new HTML5History(this, options.base)
@@ -85,13 +92,16 @@ export default class VueRouter {
     current?: Route,
     redirectedFrom?: Location
   ): Route {
+    // this.matcher是通过createMatcher(options.routes || [], this)得到的
     return this.matcher.match(raw, current, redirectedFrom)
   }
 
+  // 获取当前路由，其实就是获取history的current
   get currentRoute (): ?Route {
     return this.history && this.history.current
   }
 
+  // app是vue实例
   init (app: any /* Vue component instance */) {
     process.env.NODE_ENV !== 'production' && assert(
       install.installed,
@@ -114,6 +124,7 @@ export default class VueRouter {
 
     // main app previously initialized
     // return as we don't need to set up new history listener
+    // 只有根实例才会保存在this.app上
     if (this.app) {
       return
     }
@@ -122,6 +133,7 @@ export default class VueRouter {
 
     const history = this.history
 
+    // 根据不同的history类型来执行不同逻辑
     if (history instanceof HTML5History) {
       history.transitionTo(history.getCurrentLocation())
     } else if (history instanceof HashHistory) {
@@ -129,8 +141,11 @@ export default class VueRouter {
         history.setupListeners()
       }
       history.transitionTo(
+        // getCurrentLocation获取的是hash值
         history.getCurrentLocation(),
+        // 对应的是onComplete回调
         setupHashListener,
+        // 对应的是onAbort回调，这个好像无论如何都不会被执行到
         setupHashListener
       )
     }
@@ -142,6 +157,7 @@ export default class VueRouter {
     })
   }
 
+  // 以下是三个钩子函数
   beforeEach (fn: Function): Function {
     return registerHook(this.beforeHooks, fn)
   }
@@ -154,6 +170,7 @@ export default class VueRouter {
     return registerHook(this.afterHooks, fn)
   }
 
+  // 以下是7种事件：是对this.history相应的事件进行封装
   onReady (cb: Function, errorCb?: Function) {
     this.history.onReady(cb, errorCb)
   }
@@ -256,5 +273,6 @@ VueRouter.install = install
 VueRouter.version = '__VERSION__'
 
 if (inBrowser && window.Vue) {
+  // Vue.use会执行VueRouter的install方法
   window.Vue.use(VueRouter)
 }

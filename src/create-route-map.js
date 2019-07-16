@@ -15,10 +15,13 @@ export function createRouteMap (
   nameMap: Dictionary<RouteRecord>;
 } {
   // the path list is used to control path matching priority
+  // 存储所有的path
   const pathList: Array<string> = oldPathList || []
   // $flow-disable-line
+  // 表示一个 path 到 RouteRecord 的映射关系
   const pathMap: Dictionary<RouteRecord> = oldPathMap || Object.create(null)
   // $flow-disable-line
+  // 表示 name 到 RouteRecord 的映射关系
   const nameMap: Dictionary<RouteRecord> = oldNameMap || Object.create(null)
 
   routes.forEach(route => {
@@ -60,6 +63,7 @@ function addRouteRecord (
   }
 
   const pathToRegexpOptions: PathToRegexpOptions = route.pathToRegexpOptions || {}
+  // 是规范化后的路径，它会根据 parent 的 path 做计算
   const normalizedPath = normalizePath(
     path,
     parent,
@@ -70,12 +74,21 @@ function addRouteRecord (
     pathToRegexpOptions.sensitive = route.caseSensitive
   }
 
+  // 整个RouteRecord也是一个树形结构
   const record: RouteRecord = {
     path: normalizedPath,
+    // regex 是一个正则表达式的扩展，它利用了path-to-regexp 这个工具库，把 path 解析成一个正则表达式的扩展
+    /*
+      var keys = []
+      var re = pathToRegexp('/foo/:bar', keys)
+      // re = /^\/foo\/([^\/]+?)\/?$/i
+      // keys = [{ name: 'bar', prefix: '/', delimiter: '/', optional: false, repeat: false, pattern: '[^\\/]+?' }]
+    */
     regex: compileRouteRegex(normalizedPath, pathToRegexpOptions),
     components: route.components || { default: route.component },
     instances: {},
     name,
+    // parent是父的RouteRecord
     parent,
     matchAs,
     redirect: route.redirect,
@@ -88,6 +101,7 @@ function addRouteRecord (
         : { default: route.props }
   }
 
+  // 如果配置了 children，那么递归执行 addRouteRecord 方法，并把当前的 record 作为 parent 传入，通过这样的深度遍历，我们就可以拿到一个 route 下的完整记录。
   if (route.children) {
     // Warn if route is named, does not redirect and has a default child route.
     // If users navigate to this route by name, the default child will
@@ -133,11 +147,13 @@ function addRouteRecord (
     })
   }
 
+  // 为 pathList 和 pathMap 各添加一条记录。
   if (!pathMap[record.path]) {
     pathList.push(record.path)
     pathMap[record.path] = record
   }
 
+  // 如果我们在路由配置中配置了 name，则给 nameMap 添加一条记录。
   if (name) {
     if (!nameMap[name]) {
       nameMap[name] = record

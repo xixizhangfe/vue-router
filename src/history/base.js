@@ -30,6 +30,8 @@ export class History {
   +ensureURL: (push?: boolean) => void;
   +getCurrentLocation: () => string;
 
+  // base是实例化router传的base参数
+  // 是应用的基路径。例如，如果整个单页应用服务在 /app/ 下，然后 base 就应该设为 "/app/"
   constructor (router: Router, base: ?string) {
     this.router = router
     this.base = normalizeBase(base)
@@ -62,6 +64,11 @@ export class History {
   }
 
   transitionTo (location: RawLocation, onComplete?: Function, onAbort?: Function) {
+    // location是hash，this.current是START
+    /* START = createRoute(null, {
+        path: '/'
+      })
+    */
     const route = this.router.match(location, this.current)
     this.confirmTransition(route, () => {
       this.updateRoute(route)
@@ -98,6 +105,9 @@ export class History {
       onAbort && onAbort(err)
     }
     if (
+      // 1. 一开始current的path是'/'，最初访问页面时route.path也是'/'，但current.matched是[]，而route.matched不是空数组，所以isSameRoute是false
+      // 2. 前后两次访问的路由确实相同，isSameRoute是true，会执行ensureURL，但执行abort时，err是undefined，所以会执行到abort里的onAbort，但onAbort是undefined，所以就跳过了。
+      // 所以，在init函数里，给transitionTo传的onAbort参数setupHashListener，无论如何，都不会被执行
       isSameRoute(route, current) &&
       // in the case the route map has been dynamically appended to
       route.matched.length === current.matched.length
@@ -112,6 +122,14 @@ export class History {
       activated
     } = resolveQueue(this.current.matched, route.matched)
 
+    // 一系列钩子函数
+    /*
+      在失活的组件里调用离开守卫。
+      调用全局的 beforeEach 守卫。
+      在重用的组件里调用 beforeRouteUpdate 守卫。
+      在激活的路由配置里调用 beforeEnter。
+      解析异步路由组件。
+    */
     const queue: Array<?NavigationGuard> = [].concat(
       // in-component leave guards
       extractLeaveGuards(deactivated),
@@ -131,6 +149,8 @@ export class History {
         return abort()
       }
       try {
+        // 参数对应api文档中说的：to, from, next
+        // to是next的参数
         hook(route, current, (to: any) => {
           if (to === false || isError(to)) {
             // next(false) -> abort navigation, ensure current URL
@@ -192,6 +212,7 @@ export class History {
   }
 }
 
+// 规范化base
 function normalizeBase (base: ?string): string {
   if (!base) {
     if (inBrowser) {
@@ -212,6 +233,11 @@ function normalizeBase (base: ?string): string {
   return base.replace(/\/$/, '')
 }
 
+// 因为 route.matched 是一个 RouteRecord 的数组，
+// 由于路径是由 current 变向 route，那么就遍历对比 2 边的 RouteRecord，
+// 找到一个不一样的位置 i，那么 next 中从 0 到 i 的 RouteRecord 是两边都一样，则为 updated 的部分；
+// 从 i 到最后的 RouteRecord 是 next 独有的，为 activated 的部分；
+// 而 current 中从 i 到最后的 RouteRecord 则没有了，为 deactivated 的部分。
 function resolveQueue (
   current: Array<RouteRecord>,
   next: Array<RouteRecord>
@@ -234,12 +260,14 @@ function resolveQueue (
   }
 }
 
+// 返回一个一层数组
 function extractGuards (
-  records: Array<RouteRecord>,
-  name: string,
+  records: Array<RouteRecord>, // 要解析的路由表
+  name: string, // 导航守卫的名字，如beforeRouteLeave，beforeRouteEnter
   bind: Function,
   reverse?: boolean
 ): Array<?Function> {
+  // flatMapComponents返回的是records中每个路由执行fn后的结果数组
   const guards = flatMapComponents(records, (def, instance, match, key) => {
     const guard = extractGuard(def, name)
     if (guard) {
@@ -248,6 +276,7 @@ function extractGuards (
         : bind(guard, instance, match, key)
     }
   })
+  // 把二层数组打平成一层
   return flatten(reverse ? guards.reverse() : guards)
 }
 
@@ -278,11 +307,13 @@ function bindGuard (guard: NavigationGuard, instance: ?_Vue): ?NavigationGuard {
   }
 }
 
+// extractEnterGuards利用了 extractGuards 方法提取组件中的 beforeRouteEnter 导航钩子函数，和之前不同的是 bind 方法的不同。文档中特意强调了 beforeRouteEnter 钩子函数中是拿不到组件实例的，因为当守卫执行前，组件实例还没被创建，但是我们可以通过传一个回调给 next 来访问组件实例。在导航被确认的时候执行回调，并且把组件实例作为回调方法的参数：
 function extractEnterGuards (
   activated: Array<RouteRecord>,
   cbs: Array<Function>,
   isValid: () => boolean
 ): Array<?Function> {
+  // guard是从extractGuards函数里传入的
   return extractGuards(activated, 'beforeRouteEnter', (guard, _, match, key) => {
     return bindEnterGuard(guard, match, key, cbs, isValid)
   })
@@ -295,6 +326,7 @@ function bindEnterGuard (
   cbs: Array<Function>,
   isValid: () => boolean
 ): NavigationGuard {
+  // 在执行iterator中的hook时，就相当于执行这个routeEnterGuard函数
   return function routeEnterGuard (to, from, next) {
     return guard(to, from, cb => {
       if (typeof cb === 'function') {
