@@ -233,11 +233,15 @@ function normalizeBase (base: ?string): string {
   return base.replace(/\/$/, '')
 }
 
-// 因为 route.matched 是一个 RouteRecord 的数组，
+// 因为 route.matched 是一个 RouteRecord 的数组（且顺序是从父亲到自己），
 // 由于路径是由 current 变向 route，那么就遍历对比 2 边的 RouteRecord，
 // 找到一个不一样的位置 i，那么 next 中从 0 到 i 的 RouteRecord 是两边都一样，则为 updated 的部分；
 // 从 i 到最后的 RouteRecord 是 next 独有的，为 activated 的部分；
 // 而 current 中从 i 到最后的 RouteRecord 则没有了，为 deactivated 的部分。
+/*
+ current  : [{ path : '/parent' }, { path : '/parent/qux/:quxId'}]
+ next  : [{ path : '/parent' }, { path : '/parent/quy/:quyId'}]
+*/
 function resolveQueue (
   current: Array<RouteRecord>,
   next: Array<RouteRecord>
