@@ -122,28 +122,44 @@ export class History {
       activated
     } = resolveQueue(this.current.matched, route.matched)
 
-    // 一系列钩子函数
+    // 完整的导航解析流程:
     /*
+      导航被触发。
       在失活的组件里调用离开守卫。
       调用全局的 beforeEach 守卫。
-      在重用的组件里调用 beforeRouteUpdate 守卫。
-      在激活的路由配置里调用 beforeEnter。
+      在重用的组件里调用 beforeRouteUpdate 守卫 (2.2+)。
+      在路由配置里调用 beforeEnter。
       解析异步路由组件。
+      在被激活的组件里调用 beforeRouteEnter。
+      调用全局的 beforeResolve 守卫 (2.5+)。
+      导航被确认。
+      调用全局的 afterEach 钩子。
+      触发 DOM 更新。
+      用创建好的实例调用 beforeRouteEnter 守卫中传给 next 的回调函数。
     */
+    // 一系列钩子函数的队列
+    //
     const queue: Array<?NavigationGuard> = [].concat(
       // in-component leave guards
       extractLeaveGuards(deactivated),
       // global before hooks
+      // 这是用户自定义的
+      /*
+        const router = new VueRouter(...)
+        router.beforeEach(...)
+      */
       this.router.beforeHooks,
       // in-component update hooks
       extractUpdateHooks(updated),
       // in-config enter guards
+      // beforeEnter是在每个路由配置里写的
       activated.map(m => m.beforeEnter),
       // async components
       resolveAsyncComponents(activated)
     )
 
     this.pending = route
+    // iterator是实际执行钩子函数的，
     const iterator = (hook: NavigationGuard, next) => {
       if (this.pending !== route) {
         return abort()
@@ -233,7 +249,7 @@ function normalizeBase (base: ?string): string {
   return base.replace(/\/$/, '')
 }
 
-// 因为 route.matched 是一个 RouteRecord 的数组（且顺序是从父亲到自己），
+// 因为 route.matched 是一个 RouteRecord 的数组（且顺序是先父后己），
 // 由于路径是由 current 变向 route，那么就遍历对比 2 边的 RouteRecord，
 // 找到一个不一样的位置 i，那么 next 中从 0 到 i 的 RouteRecord 是两边都一样，则为 updated 的部分；
 // 从 i 到最后的 RouteRecord 是 next 独有的，为 activated 的部分；
@@ -269,7 +285,7 @@ function extractGuards (
   records: Array<RouteRecord>, // 要解析的路由表
   name: string, // 导航守卫的名字，如beforeRouteLeave，beforeRouteEnter
   bind: Function,
-  reverse?: boolean
+  reverse?: boolean // 是否翻转，解析beforeRouteLeave钩子的时候为true
 ): Array<?Function> {
   // flatMapComponents返回的是records中每个路由执行fn后的结果数组
   const guards = flatMapComponents(records, (def, instance, match, key) => {
