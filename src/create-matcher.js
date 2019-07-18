@@ -13,12 +13,10 @@ export type Matcher = {
   addRoutes: (routes: Array<RouteConfig>) => void;
 };
 
-// routes是我们自定义的路由配置
-// router是vue-router实例
 // createMatcher返回一个对象，里面包含了两个方法：match、addRoutes
 export function createMatcher (
-  routes: Array<RouteConfig>,
-  router: VueRouter
+  routes: Array<RouteConfig>, // routes是我们自定义的路由配置
+  router: VueRouter // router是vue-router实例
 ): Matcher {
   // 遍历routes，将所有的path写入pathList，将path与RouteRecord的映射关系写入pathMap，将name与RouteRecord的映射关系写入nameMap
   // pathList 是为了记录路由配置中的所有 path，而 pathMap 和 nameMap 都是为了通过 path 和 name 能快速查到对应的 RouteRecord。
@@ -40,12 +38,15 @@ export function createMatcher (
     const location = normalizeLocation(raw, currentRoute, false, router)
     const { name } = location
 
+    // 判断路由优先级是name > path
     if (name) {
+      // 获取record对象
       const record = nameMap[name]
       if (process.env.NODE_ENV !== 'production') {
         warn(record, `Route with name '${name}' does not exist`)
       }
       if (!record) return _createRoute(null, location)
+      // // 动态路由参数 处理 如  'quy/:quyId'  params = ['quyId']
       const paramNames = record.regex.keys
         .filter(key => !key.optional)
         .map(key => key.name)
@@ -181,18 +182,21 @@ export function createMatcher (
 }
 
 function matchRoute (
-  regex: RouteRegExp,
-  path: string,
-  params: Object
+  regex: RouteRegExp, // 路径的正则
+  path: string, // 当前跳转的路径
+  params: Object // 当前跳转路径的动态参数
 ): boolean {
+  // 使用每个路由的正则去匹配当前路径
   const m = path.match(regex)
 
+  // 如果为null，则说明匹配失败
   if (!m) {
     return false
   } else if (!params) {
     return true
   }
 
+  // 将路由匹配到的动态路由参数，存入到params里
   for (let i = 1, len = m.length; i < len; ++i) {
     const key = regex.keys[i - 1]
     const val = typeof m[i] === 'string' ? decodeURIComponent(m[i]) : m[i]

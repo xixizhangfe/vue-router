@@ -63,6 +63,22 @@ export class History {
     this.errorCbs.push(errorCb)
   }
 
+  /*
+      路由跳转核心方法。
+      this.$router.push(location, onComplete?, onAbort?)
+    location :   地址路径
+      1、 可以直接为一个地址的字符串，如 'base/home'
+      2、 可以为一个地址对象  {
+          _normalized?: boolean;
+          name?: string;
+          path?: string;
+          hash?: string;
+          query?: Dictionary<string>;
+          params?: Dictionary<string>;
+          append?: boolean;
+          replace?: boolean;
+      }
+  */
   transitionTo (location: RawLocation, onComplete?: Function, onAbort?: Function) {
     // location是hash，this.current是START
     /* START = createRoute(null, {
@@ -112,6 +128,7 @@ export class History {
       // in the case the route map has been dynamically appended to
       route.matched.length === current.matched.length
     ) {
+      // 修改当前的历史状态，不产生新的历史状态
       this.ensureURL()
       return abort()
     }
@@ -155,11 +172,16 @@ export class History {
       // beforeEnter是在每个路由配置里写的
       activated.map(m => m.beforeEnter),
       // async components
+      // resolveAsyncComponents返回的是一个钩子函数，格式是(to, from, next) => {...}
+      // 真正执行异步组件解析的是这个钩子函数，会在runQueue中执行
       resolveAsyncComponents(activated)
     )
 
+    // 在执行路由钩子函数队列之前，会先将this.pending设置为route
+    // 在调用全局的 beforeResolve 守卫后，再将this.pending设置为null
+    // TODO: 但是runQueue方法可以保证按顺序执行的呀，为啥还需要this.pending？？
     this.pending = route
-    // iterator是实际执行钩子函数的，
+    // iterator是实际执行钩子函数的函数
     const iterator = (hook: NavigationGuard, next) => {
       if (this.pending !== route) {
         return abort()

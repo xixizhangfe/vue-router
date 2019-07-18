@@ -52,9 +52,13 @@ export default class VueRouter {
     this.apps = []
     // 传入的路由配置
     this.options = options
+    // 全局beforeEach钩子函数
     this.beforeHooks = []
+    // 全局resolveEach钩子函数
     this.resolveHooks = []
+    // 全局afterEach钩子函数
     this.afterHooks = []
+    // 创建路由的匹配对象
     this.matcher = createMatcher(options.routes || [], this)
 
     let mode = options.mode || 'hash'

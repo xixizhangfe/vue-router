@@ -25,6 +25,7 @@ export function createRouteMap (
   const nameMap: Dictionary<RouteRecord> = oldNameMap || Object.create(null)
 
   routes.forEach(route => {
+    // 深度遍历路由配置属性，将其转换成 routeRecord 树
     addRouteRecord(pathList, pathMap, nameMap, route)
   })
 
@@ -179,9 +180,24 @@ function compileRouteRegex (path: string, pathToRegexpOptions: PathToRegexpOptio
   return regex
 }
 
+/*
+  生成路由的路径
+  path : '/abz'   => '/abz'
+  path : 'abz'，无父路由 => 'abz'
+  path : 'aba'， 父路由path='p1'  =>    'p1/aba'
+
+  特殊情况处理:
+  path : '/abz/'   => '/abz'
+  path : '/abz' , 父路由path='p1'  => '/abz' 变成根路径
+ */
 function normalizePath (path: string, parent?: RouteRecord, strict?: boolean): string {
+  // 移除路径末尾的/  即 '/abr/' => '/abr'
   if (!strict) path = path.replace(/\/$/, '')
+  // 以 / 开头的嵌套路径会被当作根路径。 这让你充分的使用嵌套组件而无须设置嵌套的路径。
+  // 如果path以/开头说明是 绝对路径
   if (path[0] === '/') return path
   if (parent == null) return path
+  // 处理其他的 嵌套路由
+  // cleanPath 是将路由中 // 替换成 /
   return cleanPath(`${parent.path}/${path}`)
 }
