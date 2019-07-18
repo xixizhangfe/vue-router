@@ -158,15 +158,17 @@ export class History {
     //
     const queue: Array<?NavigationGuard> = [].concat(
       // in-component leave guards
+      // 这是组件里写的beforeRouteLeave
       extractLeaveGuards(deactivated),
       // global before hooks
-      // 这是用户自定义的
+      // 这是全局的beforeEach钩子
       /*
         const router = new VueRouter(...)
         router.beforeEach(...)
       */
       this.router.beforeHooks,
       // in-component update hooks
+      // 这是组件里写的beforeRouteUpdate
       extractUpdateHooks(updated),
       // in-config enter guards
       // beforeEnter是在每个路由配置里写的

@@ -183,6 +183,7 @@ export default class VueRouter {
     this.history.onError(errorCb)
   }
 
+  // 以下是路由方法
   push (location: RawLocation, onComplete?: Function, onAbort?: Function) {
     this.history.push(location, onComplete, onAbort)
   }
